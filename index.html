@@ -70,6 +70,7 @@
             const [fileSha, setFileSha] = useState(null);
             const [saveStatus, setSaveStatus] = useState('');
             const [lastSync, setLastSync] = useState(null);
+            const [isSaving, setIsSaving] = useState(false);
 
             const badgeTypes = [
                 { type: 'gold', label: '🏆 Gull', color: 'bg-yellow-400' },
@@ -109,6 +110,11 @@
 
             const loadDataFromGitHub = async (token, silent = false) => {
                 try {
+                    // Ikke last data hvis vi er midt i en lagring
+                    if (isSaving) {
+                        return;
+                    }
+
                     if (!silent) {
                         setLoading(true);
                     }
@@ -157,6 +163,7 @@
 
             const saveDataToGitHub = async (data, token = githubToken, retryCount = 0) => {
                 try {
+                    setIsSaving(true);
                     setSaveStatus('Lagrer...');
 
                     const content = btoa(JSON.stringify(data, null, 2));
@@ -189,6 +196,7 @@
                         setFileSha(result.content.sha);
                         setSaveStatus('✓ Lagret!');
                         setTimeout(() => setSaveStatus(''), 2000);
+                        setIsSaving(false);
                     } else if (response.status === 409 && retryCount < 3) {
                         // Konflikt - last ny data og merge endringer
                         setSaveStatus('Konflikt, merger endringer...');
@@ -253,6 +261,8 @@
                     setError('Feil ved lagring til GitHub: ' + err.message);
                     setSaveStatus('✗ Feil');
                     console.error(err);
+                } finally {
+                    setIsSaving(false);
                 }
             };
 
@@ -366,16 +376,6 @@
                                 </button>
                             </div>
                             <p className="text-gray-600">Ta det på kappen eller ta utmerkelsen!</p>
-                            <div className="flex items-center justify-center gap-4 mt-2">
-                                {saveStatus && (
-                                    <p className="text-sm text-gray-500">{saveStatus}</p>
-                                )}
-                                {lastSync && (
-                                    <p className="text-xs text-gray-400">
-                                        🔄 Sist synkronisert: {lastSync.toLocaleTimeString('no-NO')}
-                                    </p>
-                                )}
-                            </div>
                         </div>
 
                         {showSettings && (
@@ -487,7 +487,6 @@
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="text-xs font-semibold text-gray-500 mb-1">Legg til utmerkelse:</div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {badgeTypes.map(badge => (
                                                 <button
@@ -586,6 +585,17 @@
                                 </div>
                             </div>
                         )}
+
+                        <div className="flex items-center justify-center gap-4 mt-2">
+                            {saveStatus && (
+                                <p className="text-sm text-gray-500">{saveStatus}</p>
+                            )}
+                            {lastSync && (
+                                <p className="text-xs text-gray-400">
+                                    🔄 Sist synkronisert: {lastSync.toLocaleTimeString('no-NO')}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             );
