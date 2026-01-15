@@ -38,7 +38,12 @@
   {
     "id": 1768476438439,
     "name": "Tom Daniel",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768479765338
+      }
+    ],
     "stains": 0
   },
   {
