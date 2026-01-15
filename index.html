@@ -70,7 +70,6 @@
                         setTeamMembers(JSON.parse(stored));
                     }
                 } catch (err) {
-                    console.error('Error loading data:', err);
                     setError('Kunne ikke laste data');
                 } finally {
                     setLoading(false);
@@ -82,7 +81,6 @@
                     localStorage.setItem('quiz-kappe-team', JSON.stringify(data));
                 } catch (err) {
                     setError('Kunne ikke lagre data. Prøv igjen.');
-                    console.error('Storage error:', err);
                 }
             };
 
@@ -100,6 +98,16 @@
                 const updatedMembers = teamMembers.map(member =>
                     member.id === memberId
                         ? { ...member, stains: member.stains + 1 }
+                        : member
+                );
+                setTeamMembers(updatedMembers);
+                saveData(updatedMembers);
+            };
+
+            const removeStain = (memberId) => {
+                const updatedMembers = teamMembers.map(member =>
+                    member.id === memberId && member.stains > 0
+                        ? { ...member, stains: member.stains - 1 }
                         : member
                 );
                 setTeamMembers(updatedMembers);
