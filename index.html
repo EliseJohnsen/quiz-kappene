@@ -155,7 +155,7 @@
                 }
             };
 
-            const saveDataToGitHub = async (data, token = githubToken) => {
+            const saveDataToGitHub = async (data, token = githubToken, retryCount = 0) => {
                 try {
                     setSaveStatus('Lagrer...');
 
@@ -189,6 +189,39 @@
                         setFileSha(result.content.sha);
                         setSaveStatus('✓ Lagret!');
                         setTimeout(() => setSaveStatus(''), 2000);
+                    } else if (response.status === 409 && retryCount < 3) {
+                        // Konflikt - last ny data og merge endringer
+                        setSaveStatus('Konflikt, synkroniserer...');
+
+                        // Last nyeste data fra GitHub
+                        const freshResponse = await fetch(
+                            `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}?ref=${GITHUB_CONFIG.branch}`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Accept': 'application/vnd.github.v3+json'
+                                }
+                            }
+                        );
+
+                        if (freshResponse.ok) {
+                            const freshData = await freshResponse.json();
+                            setFileSha(freshData.sha);
+
+                            // Oppdater local state med fresh data
+                            const freshContent = JSON.parse(atob(freshData.content));
+                            setTeamMembers(freshContent);
+
+                            // Vent litt og prøv brukerens endring på nytt
+                            await new Promise(resolve => setTimeout(resolve, 500));
+
+                            // Prøv å lagre brukerens endring igjen med ny sha
+                            return saveDataToGitHub(data, token, retryCount + 1);
+                        } else {
+                            throw new Error('Kunne ikke synkronisere data');
+                        }
+                    } else if (response.status === 409) {
+                        throw new Error('Kunne ikke lagre etter flere forsøk. Last siden på nytt og prøv igjen.');
                     } else if (response.status === 401) {
                         throw new Error('Ugyldig token. Sjekk at token har "repo" tilgang.');
                     } else if (response.status === 403) {
