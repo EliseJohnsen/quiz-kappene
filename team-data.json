@@ -2,7 +2,12 @@
   {
     "id": 1768468489332,
     "name": "Elise",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768468515866
+      }
+    ],
     "stains": 0
   }
 ]
