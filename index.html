@@ -191,7 +191,7 @@
                         setTimeout(() => setSaveStatus(''), 2000);
                     } else if (response.status === 409 && retryCount < 3) {
                         // Konflikt - last ny data og merge endringer
-                        setSaveStatus('Konflikt, synkroniserer...');
+                        setSaveStatus('Konflikt, merger endringer...');
 
                         // Last nyeste data fra GitHub
                         const freshResponse = await fetch(
@@ -208,15 +208,32 @@
                             const freshData = await freshResponse.json();
                             setFileSha(freshData.sha);
 
-                            // Oppdater local state med fresh data
+                            // Last fresh content fra GitHub
                             const freshContent = JSON.parse(atob(freshData.content));
-                            setTeamMembers(freshContent);
 
-                            // Vent litt og prøv brukerens endring på nytt
-                            await new Promise(resolve => setTimeout(resolve, 500));
+                            // Merge logikk: kombiner fresh data med brukerens endringer
+                            const mergedData = [...freshContent];
 
-                            // Prøv å lagre brukerens endring igjen med ny sha
-                            return saveDataToGitHub(data, token, retryCount + 1);
+                            // Gå gjennom brukerens data og oppdater/legg til
+                            data.forEach(userMember => {
+                                const existingIndex = mergedData.findIndex(m => m.id === userMember.id);
+                                if (existingIndex >= 0) {
+                                    // Medlem finnes - oppdater
+                                    mergedData[existingIndex] = userMember;
+                                } else {
+                                    // Nytt medlem - legg til
+                                    mergedData.push(userMember);
+                                }
+                            });
+
+                            // Oppdater UI med merged data
+                            setTeamMembers(mergedData);
+
+                            // Vent litt og prøv å lagre merged data
+                            await new Promise(resolve => setTimeout(resolve, 300));
+
+                            // Prøv å lagre merged data med ny sha
+                            return saveDataToGitHub(mergedData, token, retryCount + 1);
                         } else {
                             throw new Error('Kunne ikke synkronisere data');
                         }
