@@ -8,18 +8,28 @@
         "id": 1768469185096
       }
     ],
-    "stains": 1
+    "stains": 2
   },
   {
     "id": 1768474301682,
     "name": "Eirik",
-    "badges": [],
+    "badges": [
+      {
+        "type": "silver",
+        "id": 1768476781874
+      }
+    ],
     "stains": 0
   },
   {
     "id": 1768474394265,
     "name": "Elias",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768474399599
+      }
+    ],
     "stains": 0
   },
   {
