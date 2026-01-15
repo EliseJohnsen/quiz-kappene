@@ -232,6 +232,8 @@
                                                     <div
                                                         key={i}
                                                         className="absolute w-6 h-6 bg-amber-900 rounded-full opacity-60"
+                                                        onClick={() => removeStain(member.id)}
+                                                        title={`Klikk for å fjerne`}
                                                         style={{
                                                             left: `${20 + (i * 25) % 60}%`,
                                                             top: `${60 + (i * 15) % 30}%`,
