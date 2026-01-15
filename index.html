@@ -69,6 +69,7 @@
             const [showSettings, setShowSettings] = useState(false);
             const [fileSha, setFileSha] = useState(null);
             const [saveStatus, setSaveStatus] = useState('');
+            const [lastSync, setLastSync] = useState(null);
 
             const badgeTypes = [
                 { type: 'gold', label: '🏆 Gull', color: 'bg-yellow-400' },
@@ -83,15 +84,34 @@
                 if (storedToken) {
                     setGithubToken(storedToken);
                     loadDataFromGitHub(storedToken);
+
+                    // Auto-refresh hvert 10. sekund
+                    const intervalId = setInterval(() => {
+                        loadDataFromGitHub(storedToken, true); // silent = true
+                    }, 10000);
+
+                    // Last på nytt når vinduet får fokus
+                    const handleFocus = () => {
+                        loadDataFromGitHub(storedToken, true); // silent = true
+                    };
+                    window.addEventListener('focus', handleFocus);
+
+                    // Cleanup
+                    return () => {
+                        clearInterval(intervalId);
+                        window.removeEventListener('focus', handleFocus);
+                    };
                 } else {
                     setLoading(false);
                     setShowSettings(true);
                 }
             }, []);
 
-            const loadDataFromGitHub = async (token) => {
+            const loadDataFromGitHub = async (token, silent = false) => {
                 try {
-                    setLoading(true);
+                    if (!silent) {
+                        setLoading(true);
+                    }
                     setError(null);
 
                     const response = await fetch(
@@ -109,18 +129,29 @@
                         setFileSha(data.sha);
                         const content = JSON.parse(atob(data.content));
                         setTeamMembers(content);
+                        setLastSync(new Date());
                     } else if (response.status === 404) {
                         // Filen finnes ikke ennå, opprett den
                         setTeamMembers([]);
                         await saveDataToGitHub([], token);
+                    } else if (response.status === 401) {
+                        throw new Error('Ugyldig token. Sjekk at token har "repo" tilgang.');
+                    } else if (response.status === 403) {
+                        throw new Error('Ingen tilgang. Sjekk at token har "repo" tilgang.');
                     } else {
-                        throw new Error('Kunne ikke laste data fra GitHub');
+                        const errorText = await response.text();
+                        throw new Error(`GitHub feil (${response.status}): ${errorText}`);
                     }
                 } catch (err) {
-                    setError('Feil ved lasting fra GitHub: ' + err.message);
+                    // Ikke vis feil ved silent refresh (unngå støy fra nettverksfeil)
+                    if (!silent) {
+                        setError('Feil ved lasting fra GitHub: ' + err.message);
+                    }
                     console.error(err);
                 } finally {
-                    setLoading(false);
+                    if (!silent) {
+                        setLoading(false);
+                    }
                 }
             };
 
@@ -158,8 +189,15 @@
                         setFileSha(result.content.sha);
                         setSaveStatus('✓ Lagret!');
                         setTimeout(() => setSaveStatus(''), 2000);
+                    } else if (response.status === 401) {
+                        throw new Error('Ugyldig token. Sjekk at token har "repo" tilgang.');
+                    } else if (response.status === 403) {
+                        throw new Error('Ingen tilgang. Sjekk at token har "repo" tilgang.');
+                    } else if (response.status === 404) {
+                        throw new Error('Repository ikke funnet. Sjekk at "quiz-kappene" repository eksisterer.');
                     } else {
-                        throw new Error('Kunne ikke lagre til GitHub');
+                        const errorText = await response.text();
+                        throw new Error(`GitHub feil (${response.status}): ${errorText}`);
                     }
                 } catch (err) {
                     setError('Feil ved lagring til GitHub: ' + err.message);
@@ -278,9 +316,16 @@
                                 </button>
                             </div>
                             <p className="text-gray-600">Ta det på kappen eller ta utmerkelsen!</p>
-                            {saveStatus && (
-                                <p className="text-sm text-gray-500 mt-2">{saveStatus}</p>
-                            )}
+                            <div className="flex items-center justify-center gap-4 mt-2">
+                                {saveStatus && (
+                                    <p className="text-sm text-gray-500">{saveStatus}</p>
+                                )}
+                                {lastSync && (
+                                    <p className="text-xs text-gray-400">
+                                        🔄 Sist synkronisert: {lastSync.toLocaleTimeString('no-NO')}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         {showSettings && (
