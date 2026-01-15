@@ -72,7 +72,12 @@
   {
     "id": 1768477292017,
     "name": "Christian",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768477294692
+      }
+    ],
     "stains": 0
   }
 ]
