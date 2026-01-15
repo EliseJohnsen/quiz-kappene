@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz-kappene</title>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide icons som SVG komponenter
+        const Sparkles = () => (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 3v18M3 12h18M6.5 6.5l11 11M6.5 17.5l11-11"/>
+            </svg>
+        );
+
+        const Droplet = () => (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+        );
+
+        const Users = () => (
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        );
+
+        const Loader = () => (
+            <svg className="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+        );
+
+        function QuizKappeApp() {
+            const [teamMembers, setTeamMembers] = useState([]);
+            const [showAddMember, setShowAddMember] = useState(false);
+            const [newMemberName, setNewMemberName] = useState('');
+            const [editingId, setEditingId] = useState(null);
+            const [editingName, setEditingName] = useState('');
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            const badgeTypes = [
+                { type: 'gold', label: '🏆 Gull', color: 'bg-yellow-400' },
+                { type: 'silver', label: '🥈 Sølv', color: 'bg-gray-300' },
+                { type: 'brave', label: '⚡ Modig', color: 'bg-purple-400' },
+                { type: 'solo', label: '👑 Solo-helt', color: 'bg-blue-400' },
+            ];
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = () => {
+                try {
+                    setLoading(true);
+                    const stored = localStorage.getItem('quiz-kappe-team');
+                    if (stored) {
+                        setTeamMembers(JSON.parse(stored));
+                    }
+                } catch (err) {
+                    console.error('Error loading data:', err);
+                    setError('Kunne ikke laste data');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const saveData = (data) => {
+                try {
+                    localStorage.setItem('quiz-kappe-team', JSON.stringify(data));
+                } catch (err) {
+                    setError('Kunne ikke lagre data. Prøv igjen.');
+                    console.error('Storage error:', err);
+                }
+            };
+
+            const addBadge = (memberId, badgeType) => {
+                const updatedMembers = teamMembers.map(member =>
+                    member.id === memberId
+                        ? { ...member, badges: [...member.badges, { type: badgeType, id: Date.now() }] }
+                        : member
+                );
+                setTeamMembers(updatedMembers);
+                saveData(updatedMembers);
+            };
+
+            const addStain = (memberId) => {
+                const updatedMembers = teamMembers.map(member =>
+                    member.id === memberId
+                        ? { ...member, stains: member.stains + 1 }
+                        : member
+                );
+                setTeamMembers(updatedMembers);
+                saveData(updatedMembers);
+            };
+
+            const removeBadge = (memberId, badgeId) => {
+                const updatedMembers = teamMembers.map(member =>
+                    member.id === memberId
+                        ? { ...member, badges: member.badges.filter(b => b.id !== badgeId) }
+                        : member
+                );
+                setTeamMembers(updatedMembers);
+                saveData(updatedMembers);
+            };
+
+            const addMember = () => {
+                if (newMemberName.trim()) {
+                    const updatedMembers = [
+                        ...teamMembers,
+                        { id: Date.now(), name: newMemberName.trim(), badges: [], stains: 0 }
+                    ];
+                    setTeamMembers(updatedMembers);
+                    saveData(updatedMembers);
+                    setNewMemberName('');
+                    setShowAddMember(false);
+                }
+            };
+
+            const startEditingName = (memberId, currentName) => {
+                setEditingId(memberId);
+                setEditingName(currentName);
+            };
+
+            const saveEditedName = (memberId) => {
+                if (editingName.trim()) {
+                    const updatedMembers = teamMembers.map(member =>
+                        member.id === memberId
+                            ? { ...member, name: editingName.trim() }
+                            : member
+                    );
+                    setTeamMembers(updatedMembers);
+                    saveData(updatedMembers);
+                }
+                setEditingId(null);
+                setEditingName('');
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="w-12 h-12 text-indigo-600 mx-auto mb-4">
+                                <Loader />
+                            </div>
+                            <p className="text-gray-600">Laster quiz-kapper...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-indigo-900 mb-2">
+                                🎓 Quiz-kappene
+                            </h1>
+                            <p className="text-gray-600">Ta det på kappen eller ta utmerkelsen!</p>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {teamMembers.map(member => (
+                                <div key={member.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                                    <div className="text-center mb-4">
+                                        {editingId === member.id ? (
+                                            <input
+                                                type="text"
+                                                value={editingName}
+                                                onChange={(e) => setEditingName(e.target.value)}
+                                                onBlur={() => saveEditedName(member.id)}
+                                                onKeyPress={(e) => e.key === 'Enter' && saveEditedName(member.id)}
+                                                className="text-2xl font-bold text-gray-800 mb-2 text-center border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none w-full"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <h2
+                                                className="text-2xl font-bold text-gray-800 mb-2 cursor-pointer hover:text-indigo-600 transition-colors"
+                                                onDoubleClick={() => startEditingName(member.id, member.name)}
+                                                title="Dobbeltklikk for å endre navn"
+                                            >
+                                                {member.name}
+                                            </h2>
+                                        )}
+                                        
+                                        <div className="relative inline-block">
+                                            <div className="w-32 h-40 bg-gradient-to-b from-indigo-600 to-indigo-800 rounded-t-full mx-auto relative overflow-hidden">
+                                                <div className="absolute top-4 left-0 right-0 flex flex-wrap justify-center gap-1 px-2">
+                                                    {member.badges.map(badge => {
+                                                        const badgeInfo = badgeTypes.find(b => b.type === badge.type);
+                                                        const emoji = badgeInfo.label.split(' ')[0];
+                                                        return (
+                                                            <div
+                                                                key={badge.id}
+                                                                className="text-2xl cursor-pointer hover:scale-110 transition-transform"
+                                                                onClick={() => removeBadge(member.id, badge.id)}
+                                                                title={`${badgeInfo.label} - klikk for å fjerne`}
+                                                            >
+                                                                {emoji}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                
+                                                {Array.from({ length: member.stains }).map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="absolute w-6 h-6 bg-amber-900 rounded-full opacity-60"
+                                                        style={{
+                                                            left: `${20 + (i * 25) % 60}%`,
+                                                            top: `${60 + (i * 15) % 30}%`,
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 text-sm text-gray-600">
+                                            <div>Utmerkelser: {member.badges.length}</div>
+                                            <div>Flekker: {member.stains}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="text-xs font-semibold text-gray-500 mb-1">Legg til utmerkelse:</div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {badgeTypes.map(badge => (
+                                                <button
+                                                    key={badge.type}
+                                                    onClick={() => addBadge(member.id, badge.type)}
+                                                    className={`${badge.color} hover:opacity-80 text-white text-xs px-3 py-2 rounded-lg font-semibold transition-all`}
+                                                >
+                                                    {badge.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => addStain(member.id)}
+                                            className="w-full bg-amber-700 hover:bg-amber-800 text-white px-4 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Droplet />
+                                            Skitne til kappen!
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            <div className="bg-white rounded-xl shadow-lg p-6 flex items-center justify-center border-2 border-dashed border-gray-300">
+                                {!showAddMember ? (
+                                    <button
+                                        onClick={() => setShowAddMember(true)}
+                                        className="flex flex-col items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors"
+                                    >
+                                        <Users />
+                                        <span className="font-semibold">Legg til medlem</span>
+                                    </button>
+                                ) : (
+                                    <div className="w-full space-y-3">
+                                        <input
+                                            type="text"
+                                            value={newMemberName}
+                                            onChange={(e) => setNewMemberName(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && addMember()}
+                                            placeholder="Navn..."
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={addMember}
+                                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold"
+                                            >
+                                                Legg til
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setShowAddMember(false);
+                                                    setNewMemberName('');
+                                                }}
+                                                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                                            >
+                                                Avbryt
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {teamMembers.length > 0 && (
+                            <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+                                <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <div className="w-6 h-6 text-yellow-500">
+                                        <Sparkles />
+                                    </div>
+                                    Leaderboard
+                                </h3>
+                                <div className="space-y-2">
+                                    {[...teamMembers]
+                                        .sort((a, b) => b.badges.length - a.badges.length)
+                                        .map((member, index) => (
+                                            <div
+                                                key={member.id}
+                                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl font-bold text-gray-400">#{index + 1}</span>
+                                                    <span className="font-semibold text-gray-800">{member.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="text-sm text-gray-600">
+                                                        {member.badges.length} 🏅
+                                                    </span>
+                                                    <span className="text-sm text-gray-400">
+                                                        {member.stains} 💧
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<QuizKappeApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
