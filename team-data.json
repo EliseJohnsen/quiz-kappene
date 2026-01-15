@@ -50,7 +50,12 @@
   {
     "id": 1768478897999,
     "name": "Nordseng",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768479575198
+      }
+    ],
     "stains": 0
   }
 ]
