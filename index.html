@@ -226,8 +226,26 @@
                             data.forEach(userMember => {
                                 const existingIndex = mergedData.findIndex(m => m.id === userMember.id);
                                 if (existingIndex >= 0) {
-                                    // Medlem finnes - oppdater
-                                    mergedData[existingIndex] = userMember;
+                                    const freshMember = mergedData[existingIndex];
+
+                                    // Merge badges: kombiner unike badges fra begge
+                                    const allBadges = [...freshMember.badges];
+                                    userMember.badges.forEach(userBadge => {
+                                        if (!allBadges.find(b => b.id === userBadge.id)) {
+                                            allBadges.push(userBadge);
+                                        }
+                                    });
+
+                                    // Bruk høyeste stains verdi
+                                    const stains = Math.max(freshMember.stains || 0, userMember.stains || 0);
+
+                                    // Bruk nyeste navn (fra brukerens endring)
+                                    mergedData[existingIndex] = {
+                                        ...freshMember,
+                                        name: userMember.name,
+                                        badges: allBadges,
+                                        stains: stains
+                                    };
                                 } else {
                                     // Nytt medlem - legg til
                                     mergedData.push(userMember);
