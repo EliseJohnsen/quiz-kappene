@@ -8,7 +8,12 @@
   {
     "id": 1768474301682,
     "name": "Eirik",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1768900214940
+      }
+    ],
     "stains": 0
   },
   {
