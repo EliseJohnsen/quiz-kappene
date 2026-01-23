@@ -35,7 +35,12 @@
   {
     "id": 1768474774830,
     "name": "Timmy",
-    "badges": [],
+    "badges": [
+      {
+        "type": "gold",
+        "id": 1769152032287
+      }
+    ],
     "stains": 0
   },
   {
